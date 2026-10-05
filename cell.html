@@ -23,7 +23,7 @@
         .grid-cell {
             aspect-ratio: 1;
             transition: all 0.15s ease-in-out;
-            font-size: clamp(1.2rem, 2.5vw, 2.8rem);
+            font-size: clamp(0.9rem, 1.8vw, 2rem);
         }
         .grid-cell.selected {
             border-color: #2563eb !important;
@@ -35,7 +35,7 @@
 
         /* Large Division Notebook Grid Background */
         .division-grid-paper {
-            background-size: 50px 50px;
+            background-size: 40px 40px;
             background-image: 
                 linear-gradient(to right, #e2e8f0 1px, transparent 1px),
                 linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
@@ -98,10 +98,10 @@
     <!-- Main Workspace Container -->
     <div class="flex-1 flex overflow-hidden relative bg-slate-100">
 
-        <!-- Left Sidebar Options & Tool Controls (Operazioni e pulsanti azione spostati in alto) -->
-        <aside id="sidebarPanel" class="w-52 sm:w-60 bg-white border-r border-slate-200 p-2 flex flex-col justify-between shadow-xl overflow-y-auto z-30 transition-all duration-300 flex-shrink-0 text-xs">
-            <div class="space-y-2">
-                <!-- Operation Switcher (Spostato in alto) -->
+        <!-- Left Sidebar Options & Tool Controls (Corretto con overflow-y-auto e flessibilità corretta) -->
+        <aside id="sidebarPanel" class="w-52 sm:w-60 bg-white border-r border-slate-200 p-2 flex flex-col shadow-xl overflow-y-auto z-30 transition-all duration-300 flex-shrink-0 text-xs">
+            <div class="space-y-2 flex-shrink-0 pb-2">
+                <!-- Operation Switcher -->
                 <div>
                     <label class="block text-slate-500 font-bold text-[10px] uppercase tracking-wider mb-1">Operazione</label>
                     <div class="grid grid-cols-2 gap-1.5">
@@ -112,7 +112,7 @@
                     </div>
                 </div>
 
-                <!-- Azioni Esercizio (Spostati in alto, subito sotto le operazioni) -->
+                <!-- Azioni Esercizio -->
                 <div class="space-y-1.5 bg-slate-50 p-2 rounded-xl border border-slate-200">
                     <h3 class="font-bold text-slate-700 border-b pb-0.5 text-[11px]">Esercizio & Verifica</h3>
                     <button onclick="generateRandomOperation()" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-1.5 rounded-xl shadow transition text-[11px]">Genera Esercizio</button>
@@ -187,19 +187,19 @@
                         <input type="range" id="lineWidth" min="2" max="15" value="2" onchange="setLineWidth(this.value)" class="w-20 accent-blue-600">
                     </div>
                 </div>
-            </div>
 
-            <div class="pt-2 text-center text-[10px] text-slate-400">
-                <span>Maestro Sergio - LIM</span>
+                <div class="pt-1 text-center text-[10px] text-slate-400">
+                    <span>Maestro Sergio - LIM</span>
+                </div>
             </div>
         </aside>
 
-        <!-- Main Interactive Blackboard Workspace -->
-        <main class="flex-1 relative bg-slate-200 overflow-auto flex flex-col items-center justify-center p-2">
+        <!-- Main Interactive Blackboard Workspace (Corretto con items-start e pt-6 per posizionare l'area in alto) -->
+        <main class="flex-1 relative bg-slate-200 overflow-auto flex flex-col items-center justify-start pt-6 p-2">
             <canvas id="drawingCanvas" class="absolute inset-0 z-30"></canvas>
 
-            <!-- Mathematical Grid Box -->
-            <div id="gridContainer" class="relative z-20 bg-white p-3 rounded-2xl shadow-xl border-2 border-slate-300 max-w-full overflow-x-auto my-auto min-w-[280px]">
+            <!-- Mathematical Grid Box (Ridotte le dimensioni generali) -->
+            <div id="gridContainer" class="relative z-20 bg-white p-2 sm:p-3 rounded-2xl shadow-xl border-2 border-slate-300 max-w-full overflow-x-auto min-w-[240px]">
                 <!-- Dynamic Content Injected Here by JS -->
             </div>
             
@@ -210,7 +210,7 @@
             </div>
         </main>
 
-        <!-- Right Sidebar Panel (Tastierino in alto, sotto la licenza) -->
+        <!-- Right Sidebar Panel -->
         <aside id="keypadPanel" class="w-48 sm:w-56 bg-white border-l border-slate-200 p-2 flex flex-col shadow-xl z-30 flex-shrink-0 overflow-y-auto">
             
             <!-- Top Avatar, Info & License -->
@@ -556,14 +556,14 @@
         function renderAdditionGrid(container) {
             const cols = 1 + maxDigits + (showDecimals ? 2 : 0) + 1;
             const grid = document.createElement('div');
-            grid.className = `grid gap-1.5 items-center justify-center font-bold`;
-            grid.style.gridTemplateColumns = `repeat(${cols}, minmax(36px, 55px))`;
+            grid.className = `grid gap-1 items-center justify-center font-bold`;
+            grid.style.gridTemplateColumns = `repeat(${cols}, minmax(30px, 45px))`;
 
             for (let i = 0; i < cols; i++) {
                 if (i === cols - 1 || i === cols - 2 - (showDecimals ? 2 : 0)) {
                     grid.appendChild(createEmptyCell());
                 } else {
-                    grid.appendChild(createCell('carry', 'add-carry-row', 'text-rose-600 text-xs border border-dashed border-rose-300 bg-rose-50 rounded-lg h-7'));
+                    grid.appendChild(createCell('carry', 'add-carry-row', 'text-rose-600 text-[10px] border border-dashed border-rose-300 bg-rose-50 rounded-md h-6'));
                 }
             }
 
@@ -574,11 +574,11 @@
                         grid.appendChild(createEmptyCell());
                     } else if (i === cols - 1) {
                         const symbolBox = document.createElement('div');
-                        symbolBox.className = 'text-center font-extrabold text-blue-600 text-xl';
+                        symbolBox.className = 'text-center font-extrabold text-blue-600 text-lg';
                         symbolBox.innerText = isLastAddend ? '=' : '+';
                         grid.appendChild(symbolBox);
                     } else {
-                        grid.appendChild(createCell(`operand-${r + 1}`, `addend-row-${r}`, 'border border-slate-300 bg-slate-50 text-slate-800 rounded-xl h-10 sm:h-12 text-xl font-bold'));
+                        grid.appendChild(createCell(`operand-${r + 1}`, `addend-row-${r}`, 'border border-slate-300 bg-slate-50 text-slate-800 rounded-lg h-8 sm:h-10 text-lg font-bold'));
                     }
                 }
             }
@@ -589,7 +589,7 @@
 
             for (let i = 0; i < cols; i++) {
                 if (i === cols - 1) grid.appendChild(createEmptyCell());
-                else grid.appendChild(createCell('result', 'add-result-row', 'border border-blue-500 bg-blue-50 text-blue-900 font-extrabold rounded-xl h-10 sm:h-12 text-xl'));
+                else grid.appendChild(createCell('result', 'add-result-row', 'border border-blue-500 bg-blue-50 text-blue-900 font-extrabold rounded-lg h-8 sm:h-10 text-lg'));
             }
             container.appendChild(grid);
         }
@@ -597,33 +597,33 @@
         function renderStandardGrid(container) {
             const cols = maxDigits + (showDecimals ? 2 : 0) + 1;
             const grid = document.createElement('div');
-            grid.className = `grid gap-1.5 items-center justify-center font-bold`;
-            grid.style.gridTemplateColumns = `repeat(${cols}, minmax(36px, 55px))`;
+            grid.className = `grid gap-1 items-center justify-center font-bold`;
+            grid.style.gridTemplateColumns = `repeat(${cols}, minmax(30px, 45px))`;
 
             for (let i = 0; i < cols; i++) {
                 if (i === cols - 1 || i === cols - 2) grid.appendChild(createEmptyCell());
-                else grid.appendChild(createCell('carry', 'sub-carry-row', 'text-rose-600 text-xs border border-dashed border-rose-300 bg-rose-50 rounded-lg h-7'));
+                else grid.appendChild(createCell('carry', 'sub-carry-row', 'text-rose-600 text-[10px] border border-dashed border-rose-300 bg-rose-50 rounded-md h-6'));
             }
 
             for (let i = 0; i < cols; i++) {
                 if (i === cols - 1) {
                     const symbolBox = document.createElement('div');
-                    symbolBox.className = 'text-center font-extrabold text-blue-600 text-xl';
+                    symbolBox.className = 'text-center font-extrabold text-blue-600 text-lg';
                     symbolBox.innerText = '-';
                     grid.appendChild(symbolBox);
                 } else {
-                    grid.appendChild(createCell('operand-1', 'sub-minuend-row', 'border border-slate-300 bg-slate-50 text-slate-800 rounded-xl h-10 sm:h-12 text-xl font-bold'));
+                    grid.appendChild(createCell('operand-1', 'sub-minuend-row', 'border border-slate-300 bg-slate-50 text-slate-800 rounded-lg h-8 sm:h-10 text-lg font-bold'));
                 }
             }
 
             for (let i = 0; i < cols; i++) {
                 if (i === cols - 1) {
                     const symbolBox = document.createElement('div');
-                    symbolBox.className = 'text-center font-extrabold text-blue-600 text-xl';
+                    symbolBox.className = 'text-center font-extrabold text-blue-600 text-lg';
                     symbolBox.innerText = '=';
                     grid.appendChild(symbolBox);
                 } else {
-                    grid.appendChild(createCell('operand-2', 'sub-subtrahend-row', 'border border-slate-300 bg-slate-50 text-slate-800 rounded-xl h-10 sm:h-12 text-xl font-bold'));
+                    grid.appendChild(createCell('operand-2', 'sub-subtrahend-row', 'border border-slate-300 bg-slate-50 text-slate-800 rounded-lg h-8 sm:h-10 text-lg font-bold'));
                 }
             }
 
@@ -633,7 +633,7 @@
 
             for (let i = 0; i < cols; i++) {
                 if (i === cols - 1) grid.appendChild(createEmptyCell());
-                else grid.appendChild(createCell('result', 'sub-result-row', 'border border-blue-500 bg-blue-50 text-blue-900 font-extrabold rounded-xl h-10 sm:h-12 text-xl'));
+                else grid.appendChild(createCell('result', 'sub-result-row', 'border border-blue-500 bg-blue-50 text-blue-900 font-extrabold rounded-lg h-8 sm:h-10 text-lg'));
             }
             container.appendChild(grid);
         }
@@ -642,37 +642,37 @@
             const partialRows = getSecondFactorDigitCount();
             const cols = 1 + maxDigits + (showDecimals ? 2 : 0) + 1;
             const grid = document.createElement('div');
-            grid.className = `grid gap-1.5 items-center justify-center font-bold`;
-            grid.style.gridTemplateColumns = `repeat(${cols}, minmax(36px, 55px))`;
+            grid.className = `grid gap-1 items-center justify-center font-bold`;
+            grid.style.gridTemplateColumns = `repeat(${cols}, minmax(30px, 45px))`;
 
             for (let i = 0; i < cols; i++) {
                 if (i === cols - 1 || i === cols - 2) grid.appendChild(createEmptyCell());
-                else grid.appendChild(createCell('carry', 'mul-carry-row', 'text-rose-600 text-xs border border-dashed border-rose-300 bg-rose-50 rounded-lg h-7'));
+                else grid.appendChild(createCell('carry', 'mul-carry-row', 'text-rose-600 text-[10px] border border-dashed border-rose-300 bg-rose-50 rounded-md h-6'));
             }
 
             for (let i = 0; i < cols; i++) {
                 if (i === cols - 1) {
                     const symbolBox = document.createElement('div');
-                    symbolBox.className = 'text-center font-extrabold text-blue-600 text-xl';
+                    symbolBox.className = 'text-center font-extrabold text-blue-600 text-lg';
                     symbolBox.innerText = '×';
                     grid.appendChild(symbolBox);
                 } else if (i === 0) {
                     grid.appendChild(createEmptyCell());
                 } else {
-                    grid.appendChild(createCell('operand-1', 'mul-factor-1-row', 'border border-slate-300 bg-slate-50 text-slate-800 rounded-xl h-10 sm:h-12 text-xl font-bold'));
+                    grid.appendChild(createCell('operand-1', 'mul-factor-1-row', 'border border-slate-300 bg-slate-50 text-slate-800 rounded-lg h-8 sm:h-10 text-lg font-bold'));
                 }
             }
 
             for (let i = 0; i < cols; i++) {
                 if (i === cols - 1) {
                     const symbolBox = document.createElement('div');
-                    symbolBox.className = 'text-center font-extrabold text-blue-600 text-xl';
+                    symbolBox.className = 'text-center font-extrabold text-blue-600 text-lg';
                     symbolBox.innerText = '=';
                     grid.appendChild(symbolBox);
                 } else if (i === 0) {
                     grid.appendChild(createEmptyCell());
                 } else {
-                    grid.appendChild(createCell('operand-2', 'mul-factor-2-row', 'border border-slate-300 bg-slate-50 text-slate-800 rounded-xl h-10 sm:h-12 text-xl font-bold'));
+                    grid.appendChild(createCell('operand-2', 'mul-factor-2-row', 'border border-slate-300 bg-slate-50 text-slate-800 rounded-lg h-8 sm:h-10 text-lg font-bold'));
                 }
             }
 
@@ -684,11 +684,11 @@
                 for (let i = 0; i < cols; i++) {
                     if (i === cols - 1) {
                         const symbolBox = document.createElement('div');
-                        symbolBox.className = 'text-center font-extrabold text-slate-500 text-lg';
+                        symbolBox.className = 'text-center font-extrabold text-slate-500 text-base';
                         symbolBox.innerText = (partialRows === 1 || r === partialRows - 1) ? '=' : '+';
                         grid.appendChild(symbolBox);
                     } else {
-                        grid.appendChild(createCell('partial-prod', `mul-partial-row-${r}`, 'border border-amber-300 bg-amber-50/60 text-amber-900 rounded-xl h-10 sm:h-12 text-xl font-bold'));
+                        grid.appendChild(createCell('partial-prod', `mul-partial-row-${r}`, 'border border-amber-300 bg-amber-50/60 text-amber-900 rounded-lg h-8 sm:h-10 text-lg font-bold'));
                     }
                 }
             }
@@ -701,28 +701,28 @@
 
             for (let i = 0; i < cols; i++) {
                 if (i === cols - 1) grid.appendChild(createEmptyCell());
-                else grid.appendChild(createCell('result', 'mul-result-row', 'border border-blue-500 bg-blue-50 text-blue-900 font-extrabold rounded-xl h-10 sm:h-12 text-xl'));
+                else grid.appendChild(createCell('result', 'mul-result-row', 'border border-blue-500 bg-blue-50 text-blue-900 font-extrabold rounded-lg h-8 sm:h-10 text-lg'));
             }
             container.appendChild(grid);
         }
 
         function renderLargeDivisionGrid(container) {
-            const cellWidthClass = 'w-9 h-9 sm:w-12 sm:h-12';
-            const cellTextSize = 'text-base sm:text-xl font-bold';
+            const cellWidthClass = 'w-8 h-8 sm:w-10 sm:h-10';
+            const cellTextSize = 'text-sm sm:text-base font-bold';
             
             const divWrapper = document.createElement('div');
-            divWrapper.className = 'flex gap-3 items-start justify-center min-w-[260px] max-w-full';
+            divWrapper.className = 'flex gap-2 items-start justify-center min-w-[240px] max-w-full';
 
             const leftSide = document.createElement('div');
-            leftSide.className = 'flex flex-col gap-2 flex-1 w-full';
+            leftSide.className = 'flex flex-col gap-1 flex-1 w-full';
 
             const workArea = document.createElement('div');
-            workArea.className = 'division-grid-paper border border-slate-200 rounded-xl p-2 flex flex-col gap-1 min-h-[180px] shadow-inner';
+            workArea.className = 'division-grid-paper border border-slate-200 rounded-xl p-1.5 flex flex-col gap-1 min-h-[140px] shadow-inner';
 
-            const templateStyle = `grid-template-columns: 15px repeat(${maxDigits}, minmax(36px, 50px));`;
+            const templateStyle = `grid-template-columns: 12px repeat(${maxDigits}, minmax(30px, 42px));`;
 
             const arcHeader = document.createElement('div');
-            arcHeader.className = 'col-span-full flex items-center justify-between border-b pb-1 min-h-[22px]';
+            arcHeader.className = 'col-span-full flex items-center justify-between border-b pb-1 min-h-[20px]';
 
             const labelDiv = document.createElement('span');
             labelDiv.className = 'text-[9px] font-bold text-slate-400 uppercase tracking-wider';
@@ -740,7 +740,7 @@
             workArea.appendChild(arcHeader);
 
             const arcVisualRow = document.createElement('div');
-            arcVisualRow.className = 'grid gap-1.5 items-center col-span-full h-3';
+            arcVisualRow.className = 'grid gap-1 items-center col-span-full h-2.5';
             arcVisualRow.style.cssText = templateStyle;
             arcVisualRow.appendChild(document.createElement('div'));
 
@@ -755,50 +755,50 @@
                     if (isStart && isEnd) roundedClass = 'rounded-t-full';
                     else if (isStart) roundedClass = 'rounded-tl-full';
                     else if (isEnd) roundedClass = 'rounded-tr-full';
-                    arcCell.innerHTML = `<div class="w-full h-2 border-t-2 border-amber-500 ${roundedClass}"></div>`;
+                    arcCell.innerHTML = `<div class="w-full h-1.5 border-t-2 border-amber-500 ${roundedClass}"></div>`;
                 }
                 arcVisualRow.appendChild(arcCell);
             }
             workArea.appendChild(arcVisualRow);
 
             const dividendGridRow = document.createElement('div');
-            dividendGridRow.className = 'grid gap-1.5 items-center col-span-full pb-1 border-b border-slate-200';
+            dividendGridRow.className = 'grid gap-1 items-center col-span-full pb-1 border-b border-slate-200';
             dividendGridRow.style.cssText = templateStyle;
             dividendGridRow.appendChild(document.createElement('div'));
 
             for (let i = 0; i < maxDigits; i++) {
-                dividendGridRow.appendChild(createCell('operand-1', 'main-input', `border border-slate-300 bg-slate-50 text-slate-800 rounded-lg ${cellWidthClass} ${cellTextSize}`));
+                dividendGridRow.appendChild(createCell('operand-1', 'main-input', `border border-slate-300 bg-slate-50 text-slate-800 rounded-md ${cellWidthClass} ${cellTextSize}`));
             }
             workArea.appendChild(dividendGridRow);
 
             for (let r = 0; r < divRows; r++) {
                 const subRow = document.createElement('div');
-                subRow.className = 'grid gap-1.5 items-center';
+                subRow.className = 'grid gap-1 items-center';
                 subRow.style.cssText = templateStyle;
 
                 const rowLabel = document.createElement('div');
-                rowLabel.className = 'text-center font-bold text-slate-400 text-sm flex-shrink-0';
+                rowLabel.className = 'text-center font-bold text-slate-400 text-xs flex-shrink-0';
                 rowLabel.innerText = (r % 2 === 0 && r > 0) ? '-' : (r % 2 === 1 ? '=' : '');
                 subRow.appendChild(rowLabel);
 
                 for (let c = 0; c < maxDigits; c++) {
-                    subRow.appendChild(createCell('div-step', `div-sub-row-${r}`, `border border-slate-300 bg-white/80 text-slate-700 rounded-lg ${cellWidthClass} ${cellTextSize}`));
+                    subRow.appendChild(createCell('div-step', `div-sub-row-${r}`, `border border-slate-300 bg-white/80 text-slate-700 rounded-md ${cellWidthClass} ${cellTextSize}`));
                 }
                 workArea.appendChild(subRow);
             }
             leftSide.appendChild(workArea);
 
             const rightSide = document.createElement('div');
-            rightSide.className = 'flex flex-col bg-purple-50/60 border-l-2 border-slate-800 p-2 rounded-r-xl w-36 gap-2';
+            rightSide.className = 'flex flex-col bg-purple-50/60 border-l-2 border-slate-800 p-1.5 rounded-r-xl w-32 gap-1.5';
 
             const divisorContainer = document.createElement('div');
-            divisorContainer.className = 'flex flex-col gap-1 pb-2 border-b-2 border-slate-800';
-            divisorContainer.innerHTML = `<div class="text-[9px] font-bold text-purple-700 uppercase">DIVISORE</div><div class="h-2"></div>`;
+            divisorContainer.className = 'flex flex-col gap-1 pb-1.5 border-b-2 border-slate-800';
+            divisorContainer.innerHTML = `<div class="text-[9px] font-bold text-purple-700 uppercase">DIVISORE</div><div class="h-1"></div>`;
             
             const divisorRow = document.createElement('div');
             divisorRow.className = 'flex gap-1';
             for (let i = 0; i < Math.max(2, Math.floor(maxDigits / 2)); i++) {
-                divisorRow.appendChild(createCell('operand-2', 'div-divisor-row', `border border-purple-400 bg-purple-100 text-purple-900 rounded-lg ${cellWidthClass} ${cellTextSize}`));
+                divisorRow.appendChild(createCell('operand-2', 'div-divisor-row', `border border-purple-400 bg-purple-100 text-purple-900 rounded-md ${cellWidthClass} ${cellTextSize}`));
             }
             divisorContainer.appendChild(divisorRow);
             rightSide.appendChild(divisorContainer);
@@ -810,7 +810,7 @@
             const quotientRow = document.createElement('div');
             quotientRow.className = 'flex gap-1 overflow-x-auto pb-1';
             for (let i = 0; i < maxDigits + 1; i++) {
-                quotientRow.appendChild(createCell('quotient', 'quotient-row', `border border-emerald-500 bg-emerald-100 text-emerald-900 rounded-lg flex-shrink-0 ${cellWidthClass} text-lg font-extrabold`));
+                quotientRow.appendChild(createCell('quotient', 'quotient-row', `border border-emerald-500 bg-emerald-100 text-emerald-900 rounded-md flex-shrink-0 ${cellWidthClass} text-sm font-extrabold`));
             }
             quotientContainer.appendChild(quotientRow);
             rightSide.appendChild(quotientContainer);
