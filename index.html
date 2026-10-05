@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIM Calcoli in Colonna - Maestro Digitale</title>
+    <!-- Tailwind CSS embedded via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;800&display=swap');
+
+        html {
+            font-size: 15px;
+        }
+
+        body {
+            font-family: 'Fredoka', 'Inter', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        .grid-cell {
+            aspect-ratio: 1;
+            transition: all 0.15s ease-in-out;
+            font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+        }
+        .grid-cell.selected {
+            border-color: #2563eb !important;
+            background-color: #dbeafe !important;
+            transform: scale(1.06);
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.45);
+            z-index: 10;
+        }
+
+        /* Large Division Notebook Grid Background */
+        .division-grid-paper {
+            background-size: 70px 70px;
+            background-image: 
+                linear-gradient(to right, #e2e8f0 1px, transparent 1px),
+                linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
+        }
+
+        /* Canvas overlay for touch/stylus drawing */
+        #drawingCanvas {
+            touch-action: none;
+            pointer-events: none;
+        }
+        #drawingCanvas.drawing-active {
+            pointer-events: auto;
+            cursor: crosshair;
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 h-screen w-screen overflow-hidden flex flex-col text-slate-800">
+
+    <!-- Top Header Bar -->
+    <header class="bg-slate-800 text-white px-4 py-2.5 flex items-center justify-between shadow-lg z-30 flex-shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="bg-amber-400 text-slate-900 p-2 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+                <h1 class="text-base md:text-lg font-bold tracking-wide leading-tight">LIM Calcoli in Colonna</h1>
+                <p class="text-[11px] text-amber-300 font-semibold hidden md:block">Modalità Lavagna Interattiva & Scrittura Manuale</p>
+            </div>
+        </div>
+
+        <!-- Global Action Buttons -->
+        <div class="flex items-center space-x-2">
+            <button onclick="toggleSidebar()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-3 rounded-xl flex items-center space-x-2 transition shadow border border-slate-600 text-xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                <span class="hidden md:inline">Menu Strumenti</span>
+            </button>
+            <button onclick="clearCanvas()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-3 md:px-4 rounded-xl flex items-center space-x-2 transition shadow text-xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                <span class="hidden md:inline">Cancella Tratti</span>
+            </button>
+            <button onclick="resetGridValues()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-2 px-3 md:px-4 rounded-xl flex items-center space-x-2 transition shadow text-xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span class="hidden md:inline">Svuota Caselle</span>
+            </button>
+            <button id="fullscreenBtn" onclick="toggleFullscreen()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 md:px-4 rounded-xl flex items-center space-x-2 transition shadow text-xs">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span class="hidden md:inline">Schermo Intero</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <div class="flex-1 flex overflow-hidden relative bg-slate-100">
+
+        <!-- Left Sidebar Options & Tool Controls -->
+        <aside id="sidebarPanel" class="w-72 md:w-80 bg-white border-r border-slate-200 p-4 flex flex-col justify-end space-y-3 shadow-2xl overflow-y-auto z-30 transition-all duration-300 flex-shrink-0 text-[15px]">
+            <div class="mt-auto space-y-3">
+                <!-- Operation Switcher -->
+                <div>
+                    <label class="block text-slate-500 font-bold text-xs uppercase tracking-wider mb-1.5">Operazione</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setOperation('add')" id="op-add" class="op-btn bg-blue-600 text-white py-2 rounded-xl font-bold text-sm shadow flex items-center justify-center space-x-2">
+                            <span>+ Addizione</span>
+                        </button>
+                        <button onclick="setOperation('sub')" id="op-sub" class="op-btn bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm shadow flex items-center justify-center space-x-2">
+                            <span>- Sottrazione</span>
+                        </button>
+                        <button onclick="setOperation('mul')" id="op-mul" class="op-btn bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm shadow flex items-center justify-center space-x-2">
+                            <span>× Moltiplicaz.</span>
+                        </button>
+                        <button onclick="setOperation('div')" id="op-div" class="op-btn bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-sm shadow flex items-center justify-center space-x-2">
+                            <span>÷ Divisione</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dimensions and Decimal Settings -->
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2.5">
+                    <h3 class="font-bold text-slate-700 border-b pb-1 text-xs">Dimensioni & Opzioni</h3>
+                    
+                    <div id="digitsControl">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-500 uppercase">Cifre / Colonne</span>
+                            <span id="digitsDisplay" class="font-extrabold text-blue-600 text-base">3</span>
+                        </div>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <button onclick="changeDigits(-1)" class="bg-white hover:bg-slate-200 border border-slate-300 w-8 h-8 rounded-xl font-bold text-lg shadow-sm">-</button>
+                            <div class="flex-1 text-center font-semibold text-slate-600 text-xs">Aumenta o riduci spazio</div>
+                            <button onclick="changeDigits(1)" class="bg-white hover:bg-slate-200 border border-slate-300 w-8 h-8 rounded-xl font-bold text-lg shadow-sm">+</button>
+                        </div>
+                    </div>
+
+                    <div id="addendRowsControl" class="pt-1 border-t">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-slate-500 uppercase">Righe Addendi</span>
+                            <span id="addendRowsDisplay" class="font-extrabold text-blue-600 text-base">2</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="changeAddendRows(-1)" class="bg-white hover:bg-slate-200 border border-slate-300 w-8 h-8 rounded-xl font-bold text-lg shadow-sm">-</button>
+                            <div class="flex-1 text-center font-semibold text-slate-600 text-xs">Numero addendi</div>
+                            <button onclick="changeAddendRows(1)" class="bg-white hover:bg-slate-200 border border-slate-300 w-8 h-8 rounded-xl font-bold text-lg shadow-sm">+</button>
+                        </div>
+                    </div>
+
+                    <div id="divisionRowsControl" class="hidden pt-1 border-t">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-slate-500 uppercase">Righe di Calcolo (Divisione)</span>
+                            <span id="divRowsDisplay" class="font-extrabold text-purple-600 text-base">8</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="changeDivRows(-1)" class="bg-white hover:bg-slate-200 border border-slate-300 w-8 h-8 rounded-xl font-bold text-lg shadow-sm">-</button>
+                            <div class="flex-1 text-center font-semibold text-slate-600 text-xs">Spazio passaggi</div>
+                            <button onclick="changeDivRows(1)" class="bg-white hover:bg-slate-200 border border-slate-300 w-8 h-8 rounded-xl font-bold text-lg shadow-sm">+</button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1 border-t">
+                        <span class="text-xs font-bold text-slate-600 uppercase">Numeri con Virgola</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="decimalToggle" onchange="toggleDecimals()" class="sr-only peer">
+                            <div class="w-9 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Freehand Drawing Pen Controls with Mouse Pointer -->
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2.5">
+                    <h3 class="font-bold text-slate-700 border-b pb-1 text-xs">Pennelli e Inchiostro LIM</h3>
+                    
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="tool-pointer" onclick="setTool('pointer')" class="tool-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs flex flex-col items-center justify-center">
+                            <svg class="w-4 h-4 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>
+                            <span>Puntatore</span>
+                        </button>
+                        <button id="tool-pen" onclick="setTool('pen')" class="tool-btn bg-blue-100 border-2 border-blue-600 text-blue-700 font-bold py-2 rounded-xl text-xs flex flex-col items-center justify-center">
+                            <svg class="w-4 h-4 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                            <span>Penna</span>
+                        </button>
+                        <button id="tool-eraser" onclick="setTool('eraser')" class="tool-btn bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs flex flex-col items-center justify-center">
+                            <svg class="w-4 h-4 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <span>Gomma</span>
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Colore Inchiostro</label>
+                        <div class="flex justify-between items-center bg-white p-2 rounded-xl border border-slate-200">
+                            <button onclick="setColor('#1e293b')" class="color-btn w-5 h-5 rounded-full bg-slate-800 ring-2 ring-offset-2 ring-blue-500"></button>
+                            <button onclick="setColor('#2563eb')" class="color-btn w-5 h-5 rounded-full bg-blue-600"></button>
+                            <button onclick="setColor('#dc2626')" class="color-btn w-5 h-5 rounded-full bg-red-600"></button>
+                            <button onclick="setColor('#16a34a')" class="color-btn w-5 h-5 rounded-full bg-green-600"></button>
+                            <button onclick="setColor('#eab308')" class="color-btn w-5 h-5 rounded-full bg-yellow-500"></button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Spessore Tratto</label>
+                        <input type="range" id="lineWidth" min="2" max="22" value="2" onchange="setLineWidth(this.value)" class="w-full accent-blue-600">
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 p-3 rounded-2xl border border-amber-200">
+                    <button onclick="generateRandomOperation()" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-2.5 rounded-xl shadow transition flex items-center justify-center space-x-2 text-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Genera Esercizio</span>
+                    </button>
+                </div>
+
+                <div class="space-y-2 pt-0.5">
+                    <button onclick="checkResult()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow transition flex items-center justify-center space-x-2 text-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Verifica Risultato</span>
+                    </button>
+                    <button onclick="toggleSolution()" id="solutionBtn" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-xl transition flex items-center justify-center space-x-2 text-xs">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        <span>Mostra Soluzione</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Interactive Blackboard Workspace -->
+        <main class="flex-1 relative bg-slate-200 overflow-auto flex flex-col items-center justify-end p-4 md:p-6">
+            
+            <canvas id="drawingCanvas" class="absolute inset-0 z-30"></canvas>
+
+            <!-- Mathematical Grid Box -->
+            <div id="gridContainer" class="relative z-20 bg-white p-6 md:p-8 rounded-3xl shadow-2xl border-4 border-slate-300 max-w-full overflow-x-auto mb-2 min-w-[360px]">
+                <!-- Dynamic Content Injected Here by JS -->
+            </div>
+            
+            <!-- External carry pad for multiplication (present ONLY during multiplication) -->
+            <div id="externalCarryContainer" onclick="selectExternalCarry()" class="hidden absolute bottom-4 right-4 z-20 bg-white p-3 rounded-2xl shadow-lg border-2 border-amber-300 flex items-center space-x-2 cursor-pointer transition-all">
+                <span class="text-xs font-bold text-amber-700 uppercase">Riporti:</span>
+                <input type="text" id="externalCarryInput" onfocus="selectExternalCarry()" maxlength="5" class="w-20 text-center font-bold text-lg bg-amber-50 border border-amber-300 rounded-xl py-1 px-2 focus:outline-none">
+            </div>
+        </main>
+
+        <!-- Right Sidebar Panel - Avatar in Top Position & Keypad at Bottom -->
+        <aside id="keypadPanel" class="w-72 md:w-80 bg-white border-l border-slate-200 p-4 flex flex-col justify-between shadow-2xl z-30 flex-shrink-0 overflow-y-auto">
+            
+            <!-- Top Avatar Section -->
+            <div class="flex flex-col items-center justify-center border-b border-slate-100 pb-3">
+                <img src="sergio.png" alt="Maestro Sergio" class="w-24 h-24 md:w-28 md:h-28 object-contain rounded-full border-2 border-amber-400 shadow-sm bg-amber-50">
+                <span class="mt-2 font-extrabold text-slate-800 text-base md:text-lg tracking-wide">Maestro Sergio</span>
+            </div>
+
+            <!-- Bottom Keypad Section -->
+            <div class="mt-auto space-y-3 pt-3">
+                <div id="solutionBox" class="hidden bg-emerald-500 text-white p-3 rounded-2xl shadow-md border-2 border-white flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider block opacity-90">Soluzione Corretta</span>
+                        <span id="solutionValue" class="text-lg font-extrabold tracking-wide"></span>
+                    </div>
+                    <button onclick="toggleSolution()" class="text-white hover:text-slate-200 text-sm font-bold p-1">×</button>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2 pb-1.5 border-b">
+                        <h3 class="font-bold text-slate-700 text-sm">Tastierino Touch</h3>
+                        <span id="activeCellLabel" class="text-xs font-bold text-blue-600 bg-blue-100 px-2.5 py-1 rounded-lg">Seleziona Casella</span>
+                    </div>
+                    
+                    <p class="text-xs text-slate-500 mb-3">Tocca una casella sulla lavagna per inserire i numeri con i tasti giganti.</p>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="typeDigit('7')" class="keypad-btn bg-slate-100 hover:bg-blue-600 hover:text-white font-extrabold text-2xl py-3.5 rounded-2xl shadow-sm transition active:scale-95">7</button>
+                        <button onclick="typeDigit('8')" class="keypad-btn bg-slate-100 hover:bg-blue-600 hover:text-white font-extrabold text-2xl py-3.5 rounded-2xl shadow-sm transition active:scale-95">8</button>
+                        <button onclick="typeDigit('9')" class="keypad-btn bg-slate-100 hover:bg-blue-600 hover:text-white font-extrabold text-2xl py-3.5 rounded-2xl shadow-sm transition active:scale-95">9</button>
+                        
+                        <button onclick="typeDigit('4')" class="keypad-btn bg-slate-100 hover:bg-blue-600 hover:text-white font-extrabold text-2xl py-3.5 rounded-2xl shadow-sm transition active:scale-95">4</button>
+                        <button onclick="typeDigit('5')" class="keypad-btn bg-slate-100 hover:bg-blue-600 hover:text-white font-extrabold text-2xl py-3.5 rounded-2xl shadow-sm transition active:scale-95">5</button>
+                        <button onclick="typeDigit('6')" class="keypad-btn bg-slate-100 hover:bg-blue-600 hover:text-white font-extrabold text-2xl py-3.5 rounded-2xl shadow-sm transition active:scale-95">6</button>
+                        
+                        <button onclick="typeDigit('1')" class="keypad-btn bg-slate-100 hover:bg-blue-600 hover:text-white font-extrabold text-2xl py-3.5 rounded-2xl shadow-sm transition active:scale-95">1</button>
+                        <button onclick="typeDigit('2')" class="keypad-btn bg-slate-100 hover:bg-blue-600 hover:text-white font-extrabold text-2xl py-3.5 rounded-2xl shadow-sm transition active:scale-95">2</button>
+                        <button onclick="typeDigit('3')" class="keypad-btn bg-slate-100 hover:bg-blue-600 hover:text-white font-extrabold text-2xl py-3.5 rounded-2xl shadow-sm transition active:scale-95">3</button>
+                        
+                        <button onclick="typeDigit(',')" class="keypad-btn bg-slate-100 hover:bg-blue-600 hover:text-white font-extrabold text-2xl py-3.5 rounded-2xl shadow-sm transition active:scale-95">,</button>
+                        <button onclick="typeDigit('0')" class="keypad-btn bg-slate-100 hover:bg-blue-600 hover:text-white font-extrabold text-2xl py-3.5 rounded-2xl shadow-sm transition active:scale-95">0</button>
+                        <button onclick="typeDigit('DEL')" class="keypad-btn bg-rose-100 hover:bg-rose-600 hover:text-white text-rose-600 font-extrabold text-xl py-3.5 rounded-2xl shadow-sm transition active:scale-95 flex items-center justify-center">
+                            ⌫
+                        </button>
+                    </div>
+                </div>
+
+                <div id="feedbackBox" class="hidden p-3 rounded-2xl font-bold text-center text-xs shadow-md transition-all"></div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        let currentOp = 'add';
+        let maxDigits = 3;
+        let addendRowsCount = 2;
+        let divRows = 8;
+        let showDecimals = false;
+        let activeCell = null;
+        let isExternalCarrySelected = false;
+
+        let divisionArcs = [];
+
+        let cellValues = {};
+
+        let canvas, ctx;
+        let isDrawing = false;
+        let currentTool = 'pointer';
+        let currentColor = '#1e293b';
+        let currentLineWidth = 2;
+
+        window.onload = () => {
+            initCanvas();
+            renderGrid();
+            window.addEventListener('resize', resizeCanvas);
+        };
+
+        function initCanvas() {
+            canvas = document.getElementById('drawingCanvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseleave', stopDrawing);
+
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchend', stopDrawing);
+        }
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function startDrawing(e) {
+            if (currentTool === 'pointer') return;
+
+            isDrawing = true;
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        }
+
+        function draw(e) {
+            if (!isDrawing || currentTool === 'pointer') return;
+            const pos = getPos(e);
+
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            if (currentTool === 'eraser') {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.lineWidth = currentLineWidth * 6;
+                ctx.globalAlpha = 1.0;
+            } else {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = currentColor;
+                ctx.lineWidth = currentLineWidth;
+                ctx.globalAlpha = 1.0;
+            }
+
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                ctx.closePath();
+                isDrawing = false;
+            }
+        }
+
+        function handleTouchStart(e) {
+            if (e.touches.length === 1) {
+                if (currentTool !== 'pointer') {
+                    e.preventDefault();
+                    startDrawing(e.touches[0]);
+                }
+            }
+        }
+
+        function handleTouchMove(e) {
+            if (e.touches.length === 1) {
+                if (currentTool !== 'pointer') {
+                    e.preventDefault();
+                    draw(e.touches[0]);
+                }
+            }
+        }
+
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-100', 'border-2', 'border-blue-600', 'text-blue-700');
+                btn.classList.add('bg-slate-100', 'text-slate-700');
+            });
+
+            const activeBtn = document.getElementById(`tool-${tool}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-100', 'text-slate-700');
+                activeBtn.classList.add('bg-blue-100', 'border-2', 'border-blue-600', 'text-blue-700');
+            }
+
+            if (tool === 'pointer') {
+                canvas.classList.remove('drawing-active');
+            } else {
+                canvas.classList.add('drawing-active');
+            }
+        }
+
+        function setColor(color) {
+            currentColor = color;
+            if (currentTool === 'eraser' || currentTool === 'pointer') setTool('pen');
+            document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('ring-2', 'ring-offset-2', 'ring-blue-500'));
+            event.target.classList.add('ring-2', 'ring-offset-2', 'ring-blue-500');
+        }
+
+        function setLineWidth(val) {
+            currentLineWidth = parseInt(val);
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function saveGridValuesToMemory() {
+            cellValues = {};
+            document.querySelectorAll('.grid-cell').forEach((cell, idx) => {
+                if (cell.innerText.trim() !== '') {
+                    const rowKey = cell.dataset.rowKey || 'general';
+                    if (!cellValues[rowKey]) cellValues[rowKey] = {};
+                    cellValues[rowKey][idx] = cell.innerText.trim();
+                }
+            });
+        }
+
+        function setOperation(op) {
+            saveGridValuesToMemory();
+            currentOp = op;
+            document.querySelectorAll('.op-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-700');
+            });
+            document.getElementById(`op-${op}`).classList.remove('bg-slate-100', 'text-slate-700');
+            document.getElementById(`op-${op}`).classList.add('bg-blue-600', 'text-white');
+
+            const divRowsCtrl = document.getElementById('divisionRowsControl');
+            const addendRowsCtrl = document.getElementById('addendRowsControl');
+
+            if (op === 'div') {
+                divRowsCtrl.classList.remove('hidden');
+                addendRowsCtrl.classList.add('hidden');
+            } else if (op === 'add') {
+                divRowsCtrl.classList.add('hidden');
+                addendRowsCtrl.classList.remove('hidden');
+            } else {
+                divRowsCtrl.classList.add('hidden');
+                addendRowsCtrl.classList.add('hidden');
+            }
+
+            renderGrid();
+        }
+
+        function changeDigits(delta) {
+            saveGridValuesToMemory();
+            maxDigits = Math.max(2, Math.min(6, maxDigits + delta));
+            document.getElementById('digitsDisplay').innerText = maxDigits;
+            divisionArcs = [];
+            renderGrid();
+        }
+
+        function changeAddendRows(delta) {
+            saveGridValuesToMemory();
+            addendRowsCount = Math.max(2, Math.min(5, addendRowsCount + delta));
+            document.getElementById('addendRowsDisplay').innerText = addendRowsCount;
+            renderGrid();
+        }
+
+        function changeDivRows(delta) {
+            saveGridValuesToMemory();
+            divRows = Math.max(4, Math.min(16, divRows + delta));
+            document.getElementById('divRowsDisplay').innerText = divRows;
+            renderGrid();
+        }
+
+        function toggleDecimals() {
+            saveGridValuesToMemory();
+            showDecimals = document.getElementById('decimalToggle').checked;
+            renderGrid();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebarPanel');
+            sidebar.classList.toggle('-ml-72');
+            sidebar.classList.toggle('md:-ml-80');
+            setTimeout(resizeCanvas, 350);
+        }
+
+        function updateExternalCarryVisibility() {
+            const extCarry = document.getElementById('externalCarryContainer');
+            if (extCarry) {
+                if (currentOp === 'mul') {
+                    extCarry.classList.remove('hidden');
+                } else {
+                    extCarry.classList.add('hidden');
+                }
+            }
+        }
+
+        function selectExternalCarry() {
+            if (activeCell) {
+                activeCell.classList.remove('selected');
+                activeCell = null;
+            }
+            isExternalCarrySelected = true;
+            const container = document.getElementById('externalCarryContainer');
+            if (container) {
+                container.classList.add('ring-4', 'ring-blue-500', 'bg-amber-100');
+            }
+            document.getElementById('activeCellLabel').innerText = "Casella: RIPORTI ESTERNI";
+        }
+
+        function deselectExternalCarry() {
+            isExternalCarrySelected = false;
+            const container = document.getElementById('externalCarryContainer');
+            if (container) {
+                container.classList.remove('ring-4', 'ring-blue-500', 'bg-amber-100');
+            }
+        }
+
+        function getSecondFactorDigitCount() {
+            let digits = '';
+            if (cellValues['mul-factor-2-row']) {
+                const keys = Object.keys(cellValues['mul-factor-2-row']).sort((a, b) => a - b);
+                digits = keys.map(k => cellValues['mul-factor-2-row'][k]).join('').trim();
+            } else {
+                const cells = Array.from(document.querySelectorAll('.grid-cell[data-row-key="mul-factor-2-row"]'));
+                digits = cells.map(c => c.innerText.trim()).join('');
+            }
+            const count = digits.replace(/[^0-9]/g, '').length;
+            return count > 0 ? count : 2;
+        }
+
+        function addDivisionArc(length) {
+            let nextStart = 0;
+            if (divisionArcs.length > 0) {
+                const lastArc = divisionArcs[divisionArcs.length - 1];
+                nextStart = lastArc.end + 1;
+            }
+
+            if (nextStart + length <= maxDigits) {
+                divisionArcs.push({
+                    start: nextStart,
+                    end: nextStart + length - 1
+                });
+                saveGridValuesToMemory();
+                renderGrid();
+            }
+        }
+
+        function clearDivisionArcs() {
+            divisionArcs = [];
+            saveGridValuesToMemory();
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const container = document.getElementById('gridContainer');
+            container.innerHTML = '';
+            activeCell = null;
+            deselectExternalCarry();
+            document.getElementById('activeCellLabel').innerText = "Seleziona Casella";
+            document.getElementById('solutionBox').classList.add('hidden');
+            document.getElementById('feedbackBox').classList.add('hidden');
+
+            updateExternalCarryVisibility();
+
+            if (currentOp === 'add') {
+                renderAdditionGrid(container);
+            } else if (currentOp === 'sub') {
+                renderStandardGrid(container);
+            } else if (currentOp === 'div') {
+                renderLargeDivisionGrid(container);
+            } else if (currentOp === 'mul') {
+                renderMultiplicationGrid(container);
+            }
+
+            restoreGridValuesFromMemory();
+        }
+
+        function restoreGridValuesFromMemory() {
+            document.querySelectorAll('.grid-cell').forEach((cell, idx) => {
+                const rowKey = cell.dataset.rowKey || 'general';
+                if (cellValues[rowKey] && cellValues[rowKey][idx] !== undefined) {
+                    cell.innerText = cellValues[rowKey][idx];
+                }
+            });
+        }
+
+        function renderAdditionGrid(container) {
+            const cols = 1 + maxDigits + (showDecimals ? 2 : 0) + 1;
+            const grid = document.createElement('div');
+            grid.className = `grid gap-3.5 items-center justify-center font-bold`;
+            grid.style.gridTemplateColumns = `repeat(${cols}, minmax(75px, 105px))`;
+
+            for (let i = 0; i < cols; i++) {
+                if (i === cols - 1 || i === cols - 2 - (showDecimals ? 2 : 0)) {
+                    grid.appendChild(createEmptyCell());
+                } else {
+                    grid.appendChild(createCell('carry', 'add-carry-row', 'text-rose-600 text-xl border-2 border-dashed border-rose-300 bg-rose-50/70 rounded-xl h-14 md:h-16'));
+                }
+            }
+
+            for (let r = 0; r < addendRowsCount; r++) {
+                const isLastAddend = (r === addendRowsCount - 1);
+                for (let i = 0; i < cols; i++) {
+                    if (i === 0) {
+                        grid.appendChild(createEmptyCell());
+                    } else if (i === cols - 1) {
+                        const symbolBox = document.createElement('div');
+                        symbolBox.className = 'text-center font-extrabold text-blue-600 text-4xl md:text-5xl';
+                        symbolBox.innerText = isLastAddend ? '=' : '+';
+                        grid.appendChild(symbolBox);
+                    } else {
+                        const cell = createCell(`operand-${r + 1}`, `addend-row-${r}`, 'border-2 border-slate-300 bg-slate-50 text-slate-800 rounded-2xl h-20 md:h-24 text-4xl font-bold');
+                        grid.appendChild(cell);
+                    }
+                }
+            }
+
+            const line = document.createElement('div');
+            line.className = 'col-span-full border-b-4 border-slate-800 my-2 rounded-full';
+            grid.appendChild(line);
+
+            for (let i = 0; i < cols; i++) {
+                if (i === cols - 1) {
+                    grid.appendChild(createEmptyCell());
+                } else {
+                    grid.appendChild(createCell('result', 'add-result-row', 'border-2 border-blue-500 bg-blue-50 text-blue-900 font-extrabold rounded-2xl h-20 md:h-24 text-4xl'));
+                }
+            }
+
+            container.appendChild(grid);
+        }
+
+        function renderStandardGrid(container) {
+            const cols = maxDigits + (showDecimals ? 2 : 0) + 1;
+            const grid = document.createElement('div');
+            grid.className = `grid gap-3.5 items-center justify-center font-bold`;
+            grid.style.gridTemplateColumns = `repeat(${cols}, minmax(75px, 105px))`;
+
+            let opSymbol = '-';
+
+            for (let i = 0; i < cols; i++) {
+                if (i === cols - 1 || i === cols - 2) {
+                    grid.appendChild(createEmptyCell());
+                } else {
+                    grid.appendChild(createCell('carry', 'sub-carry-row', 'text-rose-600 text-xl border-2 border-dashed border-rose-300 bg-rose-50/70 rounded-xl h-14 md:h-16'));
+                }
+            }
+
+            for (let i = 0; i < cols; i++) {
+                if (i === cols - 1) {
+                    const symbolBox = document.createElement('div');
+                    symbolBox.className = 'text-center font-extrabold text-blue-600 text-4xl md:text-5xl';
+                    symbolBox.innerText = opSymbol;
+                    grid.appendChild(symbolBox);
+                } else {
+                    grid.appendChild(createCell('operand-1', 'sub-minuend-row', 'border-2 border-slate-300 bg-slate-50 text-slate-800 rounded-2xl h-20 md:h-24 text-4xl font-bold'));
+                }
+            }
+
+            for (let i = 0; i < cols; i++) {
+                if (i === cols - 1) {
+                    const symbolBox = document.createElement('div');
+                    symbolBox.className = 'text-center font-extrabold text-blue-600 text-4xl md:text-5xl';
+                    symbolBox.innerText = '=';
+                    grid.appendChild(symbolBox);
+                } else {
+                    const cell = createCell('operand-2', 'sub-subtrahend-row', 'border-2 border-slate-300 bg-slate-50 text-slate-800 rounded-2xl h-20 md:h-24 text-4xl font-bold');
+                    grid.appendChild(cell);
+                }
+            }
+
+            const line = document.createElement('div');
+            line.className = 'col-span-full border-b-4 border-slate-800 my-2 rounded-full';
+            grid.appendChild(line);
+
+            for (let i = 0; i < cols; i++) {
+                if (i === cols - 1) {
+                    grid.appendChild(createEmptyCell());
+                } else {
+                    grid.appendChild(createCell('result', 'sub-result-row', 'border-2 border-blue-500 bg-blue-50 text-blue-900 font-extrabold rounded-2xl h-20 md:h-24 text-4xl'));
+                }
+            }
+
+            container.appendChild(grid);
+        }
+
+        function renderMultiplicationGrid(container) {
+            const partialRows = getSecondFactorDigitCount();
+            const cols = 1 + maxDigits + (showDecimals ? 2 : 0) + 1;
+            const grid = document.createElement('div');
+            grid.className = `grid gap-3.5 items-center justify-center font-bold`;
+            grid.style.gridTemplateColumns = `repeat(${cols}, minmax(75px, 105px))`;
+
+            for (let i = 0; i < cols; i++) {
+                if (i === cols - 1 || i === cols - 2) {
+                    grid.appendChild(createEmptyCell());
+                } else {
+                    grid.appendChild(createCell('carry', 'mul-carry-row', 'text-rose-600 text-xl border-2 border-dashed border-rose-300 bg-rose-50/70 rounded-xl h-14 md:h-16'));
+                }
+            }
+
+            for (let i = 0; i < cols; i++) {
+                if (i === cols - 1) {
+                    const symbolBox = document.createElement('div');
+                    symbolBox.className = 'text-center font-extrabold text-blue-600 text-4xl md:text-5xl';
+                    symbolBox.innerText = '×';
+                    grid.appendChild(symbolBox);
+                } else if (i === 0) {
+                    grid.appendChild(createEmptyCell());
+                } else {
+                    grid.appendChild(createCell('operand-1', 'mul-factor-1-row', 'border-2 border-slate-300 bg-slate-50 text-slate-800 rounded-2xl h-20 md:h-24 text-4xl font-bold'));
+                }
+            }
+
+            for (let i = 0; i < cols; i++) {
+                if (i === cols - 1) {
+                    const symbolBox = document.createElement('div');
+                    symbolBox.className = 'text-center font-extrabold text-blue-600 text-4xl md:text-5xl';
+                    symbolBox.innerText = '=';
+                    grid.appendChild(symbolBox);
+                } else if (i === 0) {
+                    grid.appendChild(createEmptyCell());
+                } else {
+                    const cell = createCell('operand-2', 'mul-factor-2-row', 'border-2 border-slate-300 bg-slate-50 text-slate-800 rounded-2xl h-20 md:h-24 text-4xl font-bold');
+                    grid.appendChild(cell);
+                }
+            }
+
+            const line1 = document.createElement('div');
+            line1.className = 'col-span-full border-b-4 border-slate-800 my-2 rounded-full';
+            grid.appendChild(line1);
+
+            for (let r = 0; r < partialRows; r++) {
+                for (let i = 0; i < cols; i++) {
+                    if (i === cols - 1) {
+                        const symbolBox = document.createElement('div');
+                        symbolBox.className = 'text-center font-extrabold text-slate-500 text-3xl';
+                        symbolBox.innerText = (partialRows === 1 || r === partialRows - 1) ? '=' : '+';
+                        grid.appendChild(symbolBox);
+                    } else {
+                        grid.appendChild(createCell('partial-prod', `mul-partial-row-${r}`, 'border-2 border-amber-300 bg-amber-50/60 text-amber-900 rounded-2xl h-20 md:h-24 text-4xl font-bold'));
+                    }
+                }
+            }
+
+            if (partialRows > 1) {
+                const line2 = document.createElement('div');
+                line2.className = 'col-span-full border-b-4 border-slate-800 my-2 rounded-full';
+                grid.appendChild(line2);
+            }
+
+            for (let i = 0; i < cols; i++) {
+                if (i === cols - 1) {
+                    grid.appendChild(createEmptyCell());
+                } else {
+                    const cell = createCell('result', 'mul-result-row', 'border-2 border-blue-500 bg-blue-50 text-blue-900 font-extrabold rounded-2xl h-20 md:h-24 text-4xl');
+                    grid.appendChild(cell);
+                }
+            }
+
+            container.appendChild(grid);
+        }
+
+        function renderLargeDivisionGrid(container) {
+            const cellWidthClass = 'w-16 h-16 md:w-20 md:h-20';
+            const cellTextSize = 'text-3xl font-bold';
+            
+            const divWrapper = document.createElement('div');
+            divWrapper.className = 'flex flex-col md:flex-row gap-8 md:gap-12 items-start justify-center min-w-[700px] max-w-full';
+
+            const leftSide = document.createElement('div');
+            leftSide.className = 'flex flex-col gap-4 flex-1';
+
+            const workArea = document.createElement('div');
+            workArea.className = 'division-grid-paper border-2 border-slate-200 rounded-3xl p-5 flex flex-col gap-3 min-h-[400px] shadow-inner';
+
+            const templateStyle = `grid-template-columns: 24px repeat(${maxDigits}, minmax(64px, 80px));`;
+
+            // Row 1 Left: Intestazione Dividendo e Pulsanti "abbasso di:"
+            const arcHeader = document.createElement('div');
+            arcHeader.className = 'col-span-full flex items-center justify-between border-b pb-1.5 min-h-[32px]';
+
+            const labelDiv = document.createElement('span');
+            labelDiv.className = 'text-xs font-bold text-slate-400 uppercase tracking-wider';
+            labelDiv.innerText = 'DIVIDENDO:';
+            arcHeader.appendChild(labelDiv);
+
+            const arcControls = document.createElement('div');
+            arcControls.className = 'flex items-center space-x-1.5';
+            arcControls.innerHTML = `
+                <span class="text-[11px] font-bold text-amber-700 mr-1">abbasso di:</span>
+                <button onclick="addDivisionArc(1)" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-2 py-1 rounded-lg text-xs shadow-sm transition">⌒ 1 Cifra</button>
+                <button onclick="addDivisionArc(2)" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-2 py-1 rounded-lg text-xs shadow-sm transition">⌒ 2 Cifre</button>
+                <button onclick="addDivisionArc(3)" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-2 py-1 rounded-lg text-xs shadow-sm transition">⌒ 3 Cifre</button>
+                <button onclick="clearDivisionArcs()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold px-2 py-1 rounded-lg text-xs shadow-sm transition">✕</button>
+            `;
+            arcHeader.appendChild(arcControls);
+            workArea.appendChild(arcHeader);
+
+            // Row 2 Left: Visualizzazione grafica degli archetti sopra il Dividendo
+            const arcVisualRow = document.createElement('div');
+            arcVisualRow.className = 'grid gap-3 items-center col-span-full h-5';
+            arcVisualRow.style.cssText = templateStyle;
+            arcVisualRow.appendChild(document.createElement('div'));
+
+            for (let c = 0; c < maxDigits; c++) {
+                const arcCell = document.createElement('div');
+                arcCell.className = 'w-full h-full flex items-end justify-center';
+
+                const matchedArc = divisionArcs.find(a => c >= a.start && c <= a.end);
+                if (matchedArc) {
+                    const isStart = (c === matchedArc.start);
+                    const isEnd = (c === matchedArc.end);
+
+                    let roundedClass = 'rounded-t-none';
+                    if (isStart && isEnd) roundedClass = 'rounded-t-full';
+                    else if (isStart) roundedClass = 'rounded-tl-full';
+                    else if (isEnd) roundedClass = 'rounded-tr-full';
+
+                    arcCell.innerHTML = `<div class="w-full h-3.5 border-t-4 border-amber-500 ${roundedClass}"></div>`;
+                }
+                arcVisualRow.appendChild(arcCell);
+            }
+            workArea.appendChild(arcVisualRow);
+
+            // Row 3 Left: Riga del Dividendo
+            const dividendGridRow = document.createElement('div');
+            dividendGridRow.className = 'grid gap-3 items-center col-span-full pb-3 border-b-2 border-slate-200';
+            dividendGridRow.style.cssText = templateStyle;
+
+            dividendGridRow.appendChild(document.createElement('div'));
+
+            for (let i = 0; i < maxDigits; i++) {
+                dividendGridRow.appendChild(createCell('operand-1', 'main-input', `border-2 border-slate-300 bg-slate-50 text-slate-800 rounded-2xl ${cellWidthClass} ${cellTextSize}`));
+            }
+            workArea.appendChild(dividendGridRow);
+
+            // Righe di Calcolo della Divisione
+            for (let r = 0; r < divRows; r++) {
+                const subRow = document.createElement('div');
+                subRow.className = 'grid gap-3 items-center';
+                subRow.style.cssText = templateStyle;
+
+                const rowLabel = document.createElement('div');
+                rowLabel.className = 'text-center font-bold text-slate-400 text-2xl flex-shrink-0';
+                rowLabel.innerText = (r % 2 === 0 && r > 0) ? '-' : (r % 2 === 1 ? '=' : '');
+                subRow.appendChild(rowLabel);
+
+                for (let c = 0; c < maxDigits; c++) {
+                    subRow.appendChild(createCell('div-step', `div-sub-row-${r}`, `border border-slate-300 bg-white/80 text-slate-700 rounded-xl ${cellWidthClass} ${cellTextSize}`));
+                }
+                workArea.appendChild(subRow);
+            }
+            leftSide.appendChild(workArea);
+
+            // Pannello Destro: Divisore & Quoziente
+            const rightSide = document.createElement('div');
+            rightSide.className = 'flex flex-col bg-purple-50/60 border-l-4 border-slate-800 p-5 rounded-r-3xl min-w-[280px] gap-3';
+
+            const divisorContainer = document.createElement('div');
+            divisorContainer.className = 'flex flex-col gap-3 pb-4 border-b-4 border-slate-800';
+
+            // Row 1 Right: Intestazione Divisore
+            const divisorHeader = document.createElement('div');
+            divisorHeader.className = 'flex items-center border-b pb-1.5 min-h-[32px]';
+            const divisorLabel = document.createElement('div');
+            divisorLabel.className = 'text-xs font-bold text-purple-700 uppercase tracking-wider';
+            divisorLabel.innerText = 'DIVISORE';
+            divisorHeader.appendChild(divisorLabel);
+            divisorContainer.appendChild(divisorHeader);
+
+            // Row 2 Right: Distanziatore equivalente ad arcVisualRow
+            const divisorSpacer = document.createElement('div');
+            divisorSpacer.className = 'h-5';
+            divisorContainer.appendChild(divisorSpacer);
+
+            // Row 3 Right: Caselle del Divisore
+            const divisorDigits = Math.max(2, Math.floor(maxDigits / 2));
+            const divisorRow = document.createElement('div');
+            divisorRow.className = 'flex gap-3';
+            for (let i = 0; i < divisorDigits; i++) {
+                divisorRow.appendChild(createCell('operand-2', 'div-divisor-row', `border-2 border-purple-400 bg-purple-100 text-purple-900 rounded-2xl ${cellWidthClass} ${cellTextSize}`));
+            }
+            divisorContainer.appendChild(divisorRow);
+            rightSide.appendChild(divisorContainer);
+
+            // Contenitore Quoziente
+            const quotientContainer = document.createElement('div');
+            quotientContainer.className = 'flex flex-col gap-2 pt-1';
+            
+            const quotientLabel = document.createElement('div');
+            quotientLabel.className = 'text-xs font-bold text-emerald-700 uppercase tracking-wider mb-2';
+            quotientLabel.innerText = 'QUOZIENTE / RISULTATO';
+            quotientContainer.appendChild(quotientLabel);
+
+            const quotientRow = document.createElement('div');
+            quotientRow.className = 'flex gap-3 flex-nowrap overflow-x-auto pb-2';
+            for (let i = 0; i < maxDigits + 1; i++) {
+                quotientRow.appendChild(createCell('quotient', 'quotient-row', `border-2 border-emerald-500 bg-emerald-100 text-emerald-900 rounded-2xl flex-shrink-0 ${cellWidthClass} text-4xl font-extrabold`));
+            }
+            quotientContainer.appendChild(quotientRow);
+            rightSide.appendChild(quotientContainer);
+
+            divWrapper.appendChild(leftSide);
+            divWrapper.appendChild(rightSide);
+            container.appendChild(divWrapper);
+        }
+
+        function createCell(type, rowKey, customClasses) {
+            const cell = document.createElement('div');
+            cell.className = `grid-cell flex items-center justify-center cursor-pointer select-none text-center shadow-sm ${customClasses}`;
+            cell.dataset.type = type;
+            cell.dataset.rowKey = rowKey;
+            cell.innerText = '';
+
+            cell.onclick = (e) => {
+                e.stopPropagation();
+                selectCell(cell);
+            };
+
+            return cell;
+        }
+
+        function createEmptyCell() {
+            const cell = document.createElement('div');
+            cell.className = 'w-full h-full';
+            return cell;
+        }
+
+        function selectCell(cell) {
+            deselectExternalCarry();
+            if (activeCell) {
+                activeCell.classList.remove('selected');
+            }
+            activeCell = cell;
+            activeCell.classList.add('selected');
+
+            const typeName = cell.dataset.name ? `${cell.dataset.name.toUpperCase()} (${cell.dataset.type.toUpperCase()})` : cell.dataset.type.toUpperCase();
+            document.getElementById('activeCellLabel').innerText = `Casella: ${typeName}`;
+        }
+
+        function typeDigit(val) {
+            const carryInput = document.getElementById('externalCarryInput');
+            
+            if (isExternalCarrySelected || document.activeElement === carryInput) {
+                if (val === 'DEL') {
+                    carryInput.value = carryInput.value.slice(0, -1);
+                } else if (val !== ',') {
+                    if (carryInput.value.length < 5) {
+                        carryInput.value += val;
+                    }
+                }
+                return;
+            }
+
+            if (!activeCell) return;
+
+            if (val === 'DEL') {
+                activeCell.innerText = '';
+                return;
+            }
+
+            activeCell.innerText = val;
+
+            const rowKey = activeCell.dataset.rowKey;
+            if (!rowKey) return;
+
+            if (rowKey.includes('carry')) {
+                return;
+            }
+
+            // ---------------- MOLTIPLICAZIONE ----------------
+            if (currentOp === 'mul') {
+                const rowCells = Array.from(document.querySelectorAll(`.grid-cell[data-row-key="${rowKey}"]`));
+                const currentIndex = rowCells.indexOf(activeCell);
+
+                if (currentIndex === -1) return;
+
+                if (rowKey === 'mul-factor-1-row') {
+                    if (currentIndex < rowCells.length - 1) {
+                        selectCell(rowCells[currentIndex + 1]);
+                    } else {
+                        const f2Cells = Array.from(document.querySelectorAll('.grid-cell[data-row-key="mul-factor-2-row"]'));
+                        if (f2Cells.length > 0) selectCell(f2Cells[0]);
+                    }
+                    return;
+                }
+
+                if (rowKey === 'mul-factor-2-row') {
+                    saveGridValuesToMemory();
+                    const neededRows = getSecondFactorDigitCount();
+                    const currentRowsInDom = document.querySelectorAll('.grid-cell[data-row-key^="mul-partial-row-"]').length / (rowCells.length + 1);
+                    
+                    if (neededRows !== currentRowsInDom) {
+                        renderGrid();
+                    }
+
+                    const updatedF2Cells = Array.from(document.querySelectorAll('.grid-cell[data-row-key="mul-factor-2-row"]'));
+                    if (currentIndex < updatedF2Cells.length - 1) {
+                        selectCell(updatedF2Cells[currentIndex + 1]);
+                    } else {
+                        const p0Cells = Array.from(document.querySelectorAll('.grid-cell[data-row-key="mul-partial-row-0"]'));
+                        if (p0Cells.length > 0) selectCell(p0Cells[p0Cells.length - 1]);
+                    }
+                    return;
+                }
+
+                if (rowKey.startsWith('mul-partial-row-')) {
+                    const r = parseInt(rowKey.replace('mul-partial-row-', ''));
+                    if (currentIndex > 0) {
+                        selectCell(rowCells[currentIndex - 1]);
+                    } else {
+                        const nextRowKey = `mul-partial-row-${r + 1}`;
+                        const nextRowCells = Array.from(document.querySelectorAll(`.grid-cell[data-row-key="${nextRowKey}"]`));
+                        if (nextRowCells.length > 0) {
+                            selectCell(nextRowCells[nextRowCells.length - 1]);
+                        } else {
+                            const resCells = Array.from(document.querySelectorAll('.grid-cell[data-row-key="mul-result-row"]'));
+                            if (resCells.length > 0) selectCell(resCells[resCells.length - 1]);
+                        }
+                    }
+                    return;
+                }
+
+                if (rowKey === 'mul-result-row') {
+                    if (currentIndex > 0) {
+                        selectCell(rowCells[currentIndex - 1]);
+                    }
+                    return;
+                }
+
+                return;
+            }
+
+            // ---------------- ADDIZIONE ----------------
+            if (currentOp === 'add') {
+                const rowCells = Array.from(document.querySelectorAll(`.grid-cell[data-row-key="${rowKey}"]`));
+                const currentIndex = rowCells.indexOf(activeCell);
+
+                if (currentIndex === -1) return;
+
+                if (rowKey.startsWith('addend-row-')) {
+                    const rNum = parseInt(rowKey.replace('addend-row-', ''));
+                    if (currentIndex < rowCells.length - 1) {
+                        selectCell(rowCells[currentIndex + 1]);
+                    } else if (rNum < addendRowsCount - 1) {
+                        const nextAddendCells = Array.from(document.querySelectorAll(`.grid-cell[data-row-key="addend-row-${rNum + 1}"]`));
+                        if (nextAddendCells.length > 0) selectCell(nextAddendCells[0]);
+                    } else {
+                        const resCells = Array.from(document.querySelectorAll('.grid-cell[data-row-key="add-result-row"]'));
+                        if (resCells.length > 0) selectCell(resCells[resCells.length - 1]);
+                    }
+                    return;
+                }
+
+                if (rowKey === 'add-result-row') {
+                    if (currentIndex > 0) {
+                        selectCell(rowCells[currentIndex - 1]);
+                    }
+                    return;
+                }
+
+                return;
+            }
+
+            // ---------------- SOTTRAZIONE ----------------
+            if (currentOp === 'sub') {
+                const rowCells = Array.from(document.querySelectorAll(`.grid-cell[data-row-key="${rowKey}"]`));
+                const currentIndex = rowCells.indexOf(activeCell);
+
+                if (currentIndex === -1) return;
+
+                if (rowKey === 'sub-minuend-row') {
+                    if (currentIndex < rowCells.length - 1) {
+                        selectCell(rowCells[currentIndex + 1]);
+                    } else {
+                        const subtrCells = Array.from(document.querySelectorAll('.grid-cell[data-row-key="sub-subtrahend-row"]'));
+                        if (subtrCells.length > 0) selectCell(subtrCells[0]);
+                    }
+                    return;
+                }
+
+                if (rowKey === 'sub-subtrahend-row') {
+                    if (currentIndex < rowCells.length - 1) {
+                        selectCell(rowCells[currentIndex + 1]);
+                    } else {
+                        const resCells = Array.from(document.querySelectorAll('.grid-cell[data-row-key="sub-result-row"]'));
+                        if (resCells.length > 0) selectCell(resCells[resCells.length - 1]);
+                    }
+                    return;
+                }
+
+                if (rowKey === 'sub-result-row') {
+                    if (currentIndex > 0) {
+                        selectCell(rowCells[currentIndex - 1]);
+                    }
+                    return;
+                }
+
+                return;
+            }
+
+            // ---------------- DIVISIONE ----------------
+            if (currentOp === 'div') {
+                const rowCells = Array.from(document.querySelectorAll(`.grid-cell[data-row-key="${rowKey}"]`));
+                const currentIndex = rowCells.indexOf(activeCell);
+
+                if (currentIndex === -1) return;
+
+                if (rowKey === 'main-input') {
+                    if (currentIndex < rowCells.length - 1) {
+                        selectCell(rowCells[currentIndex + 1]);
+                    } else {
+                        const divCells = Array.from(document.querySelectorAll('.grid-cell[data-row-key="div-divisor-row"]'));
+                        if (divCells.length > 0) selectCell(divCells[0]);
+                    }
+                    return;
+                }
+
+                if (rowKey === 'div-divisor-row') {
+                    if (currentIndex < rowCells.length - 1) {
+                        selectCell(rowCells[currentIndex + 1]);
+                    } else {
+                        const qCells = Array.from(document.querySelectorAll('.grid-cell[data-row-key="quotient-row"]'));
+                        if (qCells.length > 0) selectCell(qCells[0]);
+                    }
+                    return;
+                }
+
+                if (rowKey === 'quotient-row') {
+                    if (currentIndex < rowCells.length - 1) {
+                        selectCell(rowCells[currentIndex + 1]);
+                    } else {
+                        const firstStepCells = Array.from(document.querySelectorAll('.grid-cell[data-row-key="div-sub-row-0"]'));
+                        if (firstStepCells.length > 0) selectCell(firstStepCells[0]);
+                    }
+                    return;
+                }
+
+                if (rowKey.startsWith('div-sub-row-')) {
+                    const r = parseInt(rowKey.replace('div-sub-row-', ''));
+                    if (currentIndex < rowCells.length - 1) {
+                        selectCell(rowCells[currentIndex + 1]);
+                    } else {
+                        const nextRowKey = `div-sub-row-${r + 1}`;
+                        const nextRowCells = Array.from(document.querySelectorAll(`.grid-cell[data-row-key="${nextRowKey}"]`));
+                        if (nextRowCells.length > 0) {
+                            selectCell(nextRowCells[0]);
+                        }
+                    }
+                    return;
+                }
+
+                return;
+            }
+        }
+
+        function resetGridValues() {
+            cellValues = {};
+            divisionArcs = [];
+            document.querySelectorAll('.grid-cell').forEach(cell => {
+                cell.innerText = '';
+            });
+            document.getElementById('externalCarryInput').value = '';
+            deselectExternalCarry();
+            document.getElementById('feedbackBox').classList.add('hidden');
+            document.getElementById('solutionBox').classList.add('hidden');
+        }
+
+        function generateRandomOperation() {
+            resetGridValues();
+            clearCanvas();
+            renderGrid();
+
+            if (currentOp === 'add') {
+                const minVal = Math.pow(10, maxDigits - 1);
+                const maxVal = Math.pow(10, maxDigits) - 1;
+                for (let r = 0; r < addendRowsCount; r++) {
+                    const randNum = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+                    fillOperandCells(`operand-${r + 1}`, randNum.toString());
+                }
+            } else if (currentOp === 'mul') {
+                const maxVal1 = Math.pow(10, Math.max(1, maxDigits - 1)) * 3;
+                const maxVal2 = Math.pow(10, Math.max(1, maxDigits - 1));
+                let num1 = Math.floor(Math.random() * (maxVal1 - 10)) + 10;
+                let num2 = Math.floor(Math.random() * (maxVal2 - 2)) + 2;
+                fillOperandCells('operand-1', num1.toString());
+                fillOperandCells('operand-2', num2.toString());
+                
+                saveGridValuesToMemory();
+                renderGrid();
+            } else if (currentOp === 'sub') {
+                const minVal = Math.pow(10, maxDigits - 1);
+                const maxVal = Math.pow(10, maxDigits) - 1;
+                let num1 = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+                let num2 = Math.floor(Math.random() * (num1 - minVal + 1)) + minVal;
+                fillOperandCells('operand-1', num1.toString());
+                fillOperandCells('operand-2', num2.toString());
+            } else if (currentOp === 'div') {
+                let num1 = Math.floor(Math.random() * (Math.pow(10, maxDigits) - Math.pow(10, maxDigits - 1))) + Math.pow(10, maxDigits - 1);
+                let num2 = Math.floor(Math.random() * 8) + 2;
+                fillOperandCells('operand-1', num1.toString());
+                fillOperandCells('operand-2', num2.toString());
+            }
+        }
+
+        function fillOperandCells(targetType, valueStr) {
+            const cells = Array.from(document.querySelectorAll(`.grid-cell[data-type="${targetType}"]`));
+            const digits = valueStr.split('');
+            let offset = cells.length - digits.length;
+
+            for (let i = 0; i < digits.length; i++) {
+                const targetIdx = offset + i;
+                if (cells[targetIdx]) {
+                    cells[targetIdx].innerText = digits[i];
+                }
+            }
+        }
+
+        function getNumberFromCells(type) {
+            const cells = Array.from(document.querySelectorAll(`.grid-cell[data-type="${type}"]`));
+            const str = cells.map(c => c.innerText.trim()).join('').replace(',', '.');
+            return str ? parseFloat(str) : 0;
+        }
+
+        function checkResult() {
+            const feedback = document.getElementById('feedbackBox');
+            feedback.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-rose-100', 'text-rose-800');
+
+            let userResult = getNumberFromCells(currentOp === 'div' ? 'quotient' : 'result');
+            
+            if (currentOp === 'mul' && userResult === 0 && getSecondFactorDigitCount() === 1) {
+                userResult = getNumberFromCells('partial-prod');
+            }
+
+            let expected = 0;
+
+            if (currentOp === 'add') {
+                for (let r = 0; r < addendRowsCount; r++) {
+                    expected += getNumberFromCells(`operand-${r + 1}`);
+                }
+            } else if (currentOp === 'sub') {
+                let num1 = getNumberFromCells('operand-1');
+                let num2 = getNumberFromCells('operand-2');
+                expected = num1 - num2;
+            } else if (currentOp === 'mul') {
+                let num1 = getNumberFromCells('operand-1');
+                let num2 = getNumberFromCells('operand-2');
+                expected = num1 * num2;
+            } else if (currentOp === 'div') {
+                let num1 = getNumberFromCells('operand-1');
+                let num2 = getNumberFromCells('operand-2');
+                expected = Math.floor(num1 / num2);
+            }
+
+            if (Math.abs(userResult - expected) < 0.01 && userResult !== 0) {
+                feedback.classList.add('bg-emerald-100', 'text-emerald-800');
+                feedback.innerHTML = '✓ Eccellente! Risultato Corretto!';
+            } else {
+                feedback.classList.add('bg-rose-100', 'text-rose-800');
+                feedback.innerHTML = '⚠ Il risultato non corrisponde. Ricontrolla i calcoli!';
+            }
+        }
+
+        function toggleSolution() {
+            const box = document.getElementById('solutionBox');
+            const valBox = document.getElementById('solutionValue');
+
+            if (box.classList.contains('hidden')) {
+                let res = 0;
+                if (currentOp === 'add') {
+                    for (let r = 0; r < addendRowsCount; r++) {
+                        res += getNumberFromCells(`operand-${r + 1}`);
+                    }
+                } else if (currentOp === 'sub') {
+                    let num1 = getNumberFromCells('operand-1');
+                    let num2 = getNumberFromCells('operand-2');
+                    res = num1 - num2;
+                } else if (currentOp === 'mul') {
+                    let num1 = getNumberFromCells('operand-1');
+                    let num2 = getNumberFromCells('operand-2');
+                    res = num1 * num2;
+                } else if (currentOp === 'div') {
+                    let num1 = getNumberFromCells('operand-1');
+                    let num2 = getNumberFromCells('operand-2');
+                    if (num2 === 0) {
+                        res = 'Impossibile';
+                    } else {
+                        const q = Math.floor(num1 / num2);
+                        const r = num1 % num2;
+                        res = r > 0 ? `${q} (resto ${r})` : `${q}`;
+                    }
+                }
+
+                valBox.innerText = res;
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Errore Fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
