@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LIM Calcoli in Colonna - Smartphone Orizzontale</title>
+    <title>LIM Calcoli in Colonna - Menu Organizzato</title>
     <!-- Tailwind CSS embedded via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;800&display=swap');
 
         html {
-            font-size: 13px; /* Base ridotta per smartphone landscape */
+            font-size: 13px;
         }
 
         body {
@@ -60,28 +60,6 @@
             background: #cbd5e1;
             border-radius: 3px;
         }
-
-        /* ========================================================= */
-        /* OTTIMIZZAZIONI SPECIFICHE PER SMARTPHONE IN ORIZZONTALE   */
-        /* ========================================================= */
-        @media screen and (max-height: 500px) {
-            header {
-                padding-top: 0.25rem !important;
-                padding-bottom: 0.25rem !important;
-            }
-            aside {
-                width: 210px !important;
-                padding: 0.5rem !important;
-            }
-            .keypad-btn {
-                padding-top: 0.4rem !important;
-                padding-bottom: 0.4rem !important;
-                font-size: 1.2rem !important;
-            }
-            #gridContainer {
-                padding: 0.75rem !important;
-            }
-        }
     </style>
 </head>
 <body class="bg-slate-900 h-screen w-screen overflow-hidden flex flex-col text-slate-800">
@@ -120,10 +98,10 @@
     <!-- Main Workspace Container -->
     <div class="flex-1 flex overflow-hidden relative bg-slate-100">
 
-        <!-- Left Sidebar Options & Tool Controls -->
+        <!-- Left Sidebar Options & Tool Controls (Operazioni e pulsanti azione spostati in alto) -->
         <aside id="sidebarPanel" class="w-52 sm:w-60 bg-white border-r border-slate-200 p-2 flex flex-col justify-between shadow-xl overflow-y-auto z-30 transition-all duration-300 flex-shrink-0 text-xs">
             <div class="space-y-2">
-                <!-- Operation Switcher -->
+                <!-- Operation Switcher (Spostato in alto) -->
                 <div>
                     <label class="block text-slate-500 font-bold text-[10px] uppercase tracking-wider mb-1">Operazione</label>
                     <div class="grid grid-cols-2 gap-1.5">
@@ -132,6 +110,14 @@
                         <button onclick="setOperation('mul')" id="op-mul" class="op-btn bg-slate-100 text-slate-700 py-1.5 rounded-lg font-bold text-[11px] shadow flex items-center justify-center"><span>× Moltiplic.</span></button>
                         <button onclick="setOperation('div')" id="op-div" class="op-btn bg-slate-100 text-slate-700 py-1.5 rounded-lg font-bold text-[11px] shadow flex items-center justify-center"><span>÷ Divisione</span></button>
                     </div>
+                </div>
+
+                <!-- Azioni Esercizio (Spostati in alto, subito sotto le operazioni) -->
+                <div class="space-y-1.5 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                    <h3 class="font-bold text-slate-700 border-b pb-0.5 text-[11px]">Esercizio & Verifica</h3>
+                    <button onclick="generateRandomOperation()" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-1.5 rounded-xl shadow transition text-[11px]">Genera Esercizio</button>
+                    <button onclick="checkResult()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-xl shadow transition text-[11px]">Verifica</button>
+                    <button onclick="toggleSolution()" id="solutionBtn" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-1 rounded-xl transition text-[10px]">Soluzione</button>
                 </div>
 
                 <!-- Dimensions and Decimal Settings -->
@@ -203,10 +189,8 @@
                 </div>
             </div>
 
-            <div class="space-y-1.5 pt-2">
-                <button onclick="generateRandomOperation()" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-1.5 rounded-xl shadow transition text-[11px]">Genera Esercizio</button>
-                <button onclick="checkResult()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-xl shadow transition text-[11px]">Verifica</button>
-                <button onclick="toggleSolution()" id="solutionBtn" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-1 rounded-xl transition text-[10px]">Soluzione</button>
+            <div class="pt-2 text-center text-[10px] text-slate-400">
+                <span>Maestro Sergio - LIM</span>
             </div>
         </aside>
 
@@ -226,11 +210,11 @@
             </div>
         </main>
 
-        <!-- Right Sidebar Panel (Tastierino) -->
-        <aside id="keypadPanel" class="w-48 sm:w-56 bg-white border-l border-slate-200 p-2 flex flex-col justify-between shadow-xl z-30 flex-shrink-0 overflow-y-auto">
+        <!-- Right Sidebar Panel (Tastierino in alto, sotto la licenza) -->
+        <aside id="keypadPanel" class="w-48 sm:w-56 bg-white border-l border-slate-200 p-2 flex flex-col shadow-xl z-30 flex-shrink-0 overflow-y-auto">
             
-            <!-- Top Avatar & Info (Molto Compatta) -->
-            <div class="flex items-center space-x-2 border-b border-slate-100 pb-1.5">
+            <!-- Top Avatar, Info & License -->
+            <div class="flex items-center space-x-2 border-b border-slate-100 pb-1.5 mb-1.5 flex-shrink-0">
                 <img src="sergio.png" alt="Maestro Sergio" class="w-9 h-9 object-contain rounded-full border border-amber-400 bg-amber-50 flex-shrink-0">
                 <div class="overflow-hidden">
                     <span class="font-extrabold text-slate-800 text-xs block truncate">Maestro Sergio</span>
@@ -240,8 +224,8 @@
                 </div>
             </div>
 
-            <!-- Bottom Keypad Section -->
-            <div class="mt-auto space-y-1.5 pt-1">
+            <!-- Keypad Section -->
+            <div class="space-y-1.5">
                 <div id="solutionBox" class="hidden bg-emerald-500 text-white p-1.5 rounded-xl shadow border border-white flex items-center justify-between">
                     <div>
                         <span class="text-[9px] font-bold uppercase block opacity-90">Soluzione</span>
@@ -284,7 +268,7 @@
         let currentOp = 'add';
         let maxDigits = 3;
         let addendRowsCount = 2;
-        let divRows = 6; // Ridotto per ottimizzare lo spazio in altezza su smartphone
+        let divRows = 6;
         let showDecimals = false;
         let activeCell = null;
         let isExternalCarrySelected = false;
